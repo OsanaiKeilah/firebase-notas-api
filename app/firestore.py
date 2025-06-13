@@ -1,35 +1,29 @@
-# app/firestore.py
+# app/firestore.py (versão corrigida)
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import json
 
-# Verifica se o arquivo de credenciais existe
-def check_credentials_file():
-    return os.path.exists("serviceAccountKey.json")
-
-# Inicializa Firebase apenas uma vez
-if not firebase_admin._apps:
-    try:
-        # Tenta usar o arquivo serviceAccountKey.json
-        if check_credentials_file():
-            print("Usando arquivo serviceAccountKey.json para autenticação")
-            cred = credentials.Certificate("serviceAccountKey.json")
-            firebase_admin.initialize_app(cred)
-        else:
-            print("ERRO: Arquivo serviceAccountKey.json não encontrado!")
-            print("Por favor, coloque o arquivo de credenciais na pasta raiz do projeto.")
-            print("Caminho esperado:", os.path.abspath("serviceAccountKey.json"))
-            # Não inicializa o app se não tiver credenciais válidas
-    except Exception as e:
-        print(f"ERRO ao inicializar Firebase: {e}")
-        raise
-
-# Obtém o cliente Firestore
+# Inicializa Firebase usando variáveis de ambiente ou arquivo local
 try:
+    # Verifica se existe variável de ambiente com as credenciais
+    if "FIREBASE_CREDENTIALS" in os.environ:
+        print("Usando variável de ambiente FIREBASE_CREDENTIALS")
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS")
+        cred_dict = json.loads(cred_json)
+        cred = credentials.Certificate(cred_dict)
+    # Caso contrário, tenta usar o arquivo local
+    elif os.path.exists("serviceAccountKey.json"):
+        print("Usando arquivo local serviceAccountKey.json")
+        cred = credentials.Certificate("serviceAccountKey.json")
+    else:
+        raise Exception("Credenciais do Firebase não encontradas")
+    
+    firebase_admin.initialize_app(cred)
+    print("Firebase inicializado com sucesso!")
     db = firestore.client()
 except Exception as e:
-    print(f"ERRO ao obter cliente Firestore: {e}")
+    print(f"ERRO ao inicializar Firebase: {e}")
     # Cria um objeto simulado para evitar erros de importação
     class MockDB:
         def collection(self, name):
@@ -38,11 +32,23 @@ except Exception as e:
                     return []
                 def add(self, data):
                     return [None, MockDoc()]
+                def document(self, doc_id=None):
+                    return MockDocument(doc_id)
             return MockCollection()
     
     class MockDoc:
-        def id(self):
-            return "mock-id"
+        def __init__(self):
+            self.id = "mock-id-123"  # Agora é um atributo, não um método
+        
+        def to_dict(self):
+            return {}
+    
+    class MockDocument:
+        def __init__(self, doc_id=None):
+            self.id = doc_id or "mock-id-123"
+        
+        def set(self, data):
+            return self.id
     
     print("Usando banco de dados simulado para evitar erros de importação")
     db = MockDB()
