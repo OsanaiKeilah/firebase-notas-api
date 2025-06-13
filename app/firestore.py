@@ -1,18 +1,14 @@
-# app/firestore.py (versão corrigida)
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import json
 
-# Inicializa Firebase usando variáveis de ambiente ou arquivo local
 try:
-    # Verifica se existe variável de ambiente com as credenciais
     if "FIREBASE_CREDENTIALS" in os.environ:
         print("Usando variável de ambiente FIREBASE_CREDENTIALS")
         cred_json = os.environ.get("FIREBASE_CREDENTIALS")
         cred_dict = json.loads(cred_json)
         cred = credentials.Certificate(cred_dict)
-    # Caso contrário, tenta usar o arquivo local
     elif os.path.exists("serviceAccountKey.json"):
         print("Usando arquivo local serviceAccountKey.json")
         cred = credentials.Certificate("serviceAccountKey.json")
@@ -24,7 +20,6 @@ try:
     db = firestore.client()
 except Exception as e:
     print(f"ERRO ao inicializar Firebase: {e}")
-    # Cria um objeto simulado para evitar erros de importação
     class MockDB:
         def collection(self, name):
             class MockCollection:
@@ -38,7 +33,7 @@ except Exception as e:
     
     class MockDoc:
         def __init__(self):
-            self.id = "mock-id-123"  # Agora é um atributo, não um método
+            self.id = "mock-id-123" 
         
         def to_dict(self):
             return {}
